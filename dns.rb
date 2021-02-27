@@ -15,4 +15,9 @@ class DNSSpoof
         if spoof then
             start
         end
-    end #initalize
+    end #initalize  
+
+    def send(packet, interface)
+        packet.to_w(interface)
+    end
+    
